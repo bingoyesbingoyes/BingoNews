@@ -1,0 +1,22 @@
+[package]
+name = "bingonews"
+version = "0.1.0"
+description = "A beautiful Apple-style news aggregator and desktop resource manager"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "bingonews_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "devtools"] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2.4.2"
+tauri-plugin-fs = "2"
+window-vibrancy = "0.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

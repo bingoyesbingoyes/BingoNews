@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Black background circle -->
+  <circle cx="256" cy="256" r="256" fill="black"/>
+
+  <!-- Body curve - larger -->
+  <path d="M450 120
+           C400 160, 375 220, 375 280
+           C375 340, 350 390, 300 405
+           C250 420, 180 405, 130 380"
+        fill="none" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Tail feathers - larger -->
+  <path d="M130 380
+           C105 365, 85 345, 78 325
+           C98 332, 125 328, 145 318
+           C115 310, 88 290, 75 265
+           C100 275, 125 278, 150 270
+           C118 258, 92 232, 85 200
+           C110 215, 138 222, 165 215
+           C138 195, 118 162, 125 125
+           C158 158, 198 185, 255 200"
+        fill="none" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

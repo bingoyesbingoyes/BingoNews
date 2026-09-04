@@ -1,0 +1,32 @@
+use tauri::Manager;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .setup(|app| {
+            let window = app.get_webview_window("main").unwrap();
+
+            // Apply vibrancy effect on macOS for frosted glass look
+            #[cfg(target_os = "macos")]
+            {
+                use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+                apply_vibrancy(
+                    &window,
+                    NSVisualEffectMaterial::FullScreenUI,
+                    None,
+                    Some(12.0)
+                ).expect("Failed to apply vibrancy");
+            }
+
+            #[cfg(debug_assertions)]
+            {
+                window.open_devtools();
+            }
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

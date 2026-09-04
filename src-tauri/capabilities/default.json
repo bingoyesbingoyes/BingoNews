@@ -1,0 +1,45 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-is-maximized",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-size",
+    "core:webview:allow-webview-position",
+    "core:webview:allow-set-webview-position",
+    "opener:default",
+    "opener:allow-open-url",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        { "path": "**" }
+      ]
+    },
+    "dialog:default",
+    "dialog:allow-open",
+    "fs:default",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-exists",
+    "fs:allow-mkdir",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$RESOURCE/**" },
+        { "path": "$APPDATA/**" },
+        { "path": "$APPCONFIG/**" },
+        { "path": "**" }
+      ]
+    }
+  ]
+}
