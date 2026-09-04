@@ -14,22 +14,17 @@ const emit = defineEmits<{
 }>();
 
 const selectedColor = ref(props.modelValue);
-const customColor = ref(props.modelValue);
 
 watch(() => props.modelValue, (val) => {
   selectedColor.value = val;
-  customColor.value = val;
 });
 
 function selectPresetColor(color: string) {
   selectedColor.value = color;
-  customColor.value = color;
 }
 
 function handleCustomColorChange(e: Event) {
-  const target = e.target as HTMLInputElement;
-  selectedColor.value = target.value;
-  customColor.value = target.value;
+  selectedColor.value = (e.target as HTMLInputElement).value;
 }
 
 function handleHexInput(e: Event) {
@@ -40,7 +35,6 @@ function handleHexInput(e: Event) {
   }
   if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
     selectedColor.value = value;
-    customColor.value = value;
   }
 }
 
@@ -51,7 +45,6 @@ function confirm() {
 
 function cancel() {
   selectedColor.value = props.modelValue;
-  customColor.value = props.modelValue;
   emit('update:visible', false);
 }
 
@@ -91,13 +84,13 @@ function isSelected(color: string) {
             <div class="custom-color-inputs">
               <input
                 type="color"
-                :value="customColor"
+                :value="selectedColor"
                 class="color-input"
                 @input="handleCustomColorChange"
               />
               <input
                 type="text"
-                :value="customColor"
+                :value="selectedColor"
                 class="hex-input input"
                 placeholder="#000000"
                 maxlength="7"

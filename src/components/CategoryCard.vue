@@ -12,7 +12,6 @@ import {
   GripVertical,
   FileText
 } from 'lucide-vue-next';
-import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import { useNewsStore } from '../stores/newsStore';
 import EditableText from './EditableText.vue';
 import SourceItem from './SourceItem.vue';
@@ -89,20 +88,7 @@ function toggleSelectAll() {
 
 async function openSelected() {
   const selected = props.category.sources.filter(s => store.selectedSources.has(s.id));
-  for (const source of selected) {
-    try {
-      // Track the open count
-      store.incrementOpenCount(source.id);
-
-      if (source.isFile && source.filePath) {
-        await openPath(source.filePath);
-      } else {
-        await openUrl(source.url);
-      }
-    } catch (error) {
-      console.error('Failed to open:', error);
-    }
-  }
+  await store.openSources(selected);
 }
 
 // Add new source

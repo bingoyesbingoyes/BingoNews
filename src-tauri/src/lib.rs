@@ -9,7 +9,6 @@ pub fn run() {
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
 
-            // Apply vibrancy effect on macOS for frosted glass look
             #[cfg(target_os = "macos")]
             {
                 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};

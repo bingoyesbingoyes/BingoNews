@@ -18,13 +18,10 @@ function createDefaultConfig(): AppConfig {
 }
 
 export function useConfigFile() {
-  const isLoading = ref(true);
-  const error = ref<string | null>(null);
   const configPath = ref<string>('');
 
   async function initConfigPath(): Promise<string> {
     const dataDir = await appDataDir();
-    // Ensure proper path separator (dataDir may or may not end with separator)
     const separator = dataDir.includes('\\') ? '\\' : '/';
     const normalizedDir = dataDir.endsWith(separator) ? dataDir : dataDir + separator;
     configPath.value = `${normalizedDir}${CONFIG_FILENAME}`;
@@ -34,21 +31,14 @@ export function useConfigFile() {
   async function readConfig(): Promise<AppConfig> {
     try {
       const path = configPath.value || await initConfigPath();
-      const fileExists = await exists(path);
-
-      if (!fileExists) {
+      if (!await exists(path)) {
         const defaultConfig = createDefaultConfig();
         await writeConfig(defaultConfig);
         return defaultConfig;
       }
-
-      const content = await readTextFile(path);
-      const config = JSON.parse(content) as AppConfig;
-      isLoading.value = false;
-      return config;
+      return JSON.parse(await readTextFile(path)) as AppConfig;
     } catch (e) {
-      error.value = `Failed to read config: ${e}`;
-      isLoading.value = false;
+      console.error('Failed to read config:', e);
       return createDefaultConfig();
     }
   }
@@ -56,70 +46,46 @@ export function useConfigFile() {
   async function writeConfig(config: AppConfig): Promise<void> {
     try {
       const path = configPath.value || await initConfigPath();
-
-      // Ensure the directory exists
       const dataDir = await appDataDir();
-      const dirExists = await exists(dataDir);
-      if (!dirExists) {
+      if (!await exists(dataDir)) {
         await mkdir(dataDir, { recursive: true });
       }
-
-      const content = JSON.stringify(config, null, 2);
-      await writeTextFile(path, content);
+      await writeTextFile(path, JSON.stringify(config, null, 2));
     } catch (e) {
-      error.value = `Failed to write config: ${e}`;
       console.error('Failed to write config:', e);
     }
   }
 
-  let pollInterval: ReturnType<typeof setInterval> | null = null;
-  let lastContent = '';
+  function startWatching(onConfigChange: (config: AppConfig) => void): void {
+    let lastContent = '';
 
-  async function startWatching(onConfigChange: (config: AppConfig) => void): Promise<void> {
-    // Use polling for file changes (cross-platform compatible)
-    const path = configPath.value || await initConfigPath();
-
-    // Initialize lastContent
-    try {
-      lastContent = await readTextFile(path);
-    } catch {
-      lastContent = '';
-    }
-
-    // Poll every 2 seconds for changes
-    pollInterval = setInterval(async () => {
+    async function initWatch() {
+      const path = configPath.value || await initConfigPath();
       try {
-        if (!configPath.value) return;
-
-        const content = await readTextFile(configPath.value);
-        if (content && content !== lastContent) {
-          lastContent = content;
-          const config = JSON.parse(content) as AppConfig;
-          onConfigChange(config);
-        }
+        lastContent = await readTextFile(path);
       } catch {
-        // Ignore read errors during polling
+        lastContent = '';
       }
-    }, 2000);
-
-    console.log('Config file polling started');
-  }
-
-  function stopWatching() {
-    if (pollInterval) {
-      clearInterval(pollInterval);
-      pollInterval = null;
+      setInterval(async () => {
+        try {
+          const content = await readTextFile(path);
+          if (content && content !== lastContent) {
+            lastContent = content;
+            onConfigChange(JSON.parse(content) as AppConfig);
+          }
+        } catch {
+          // Ignore transient file errors while polling.
+        }
+      }, 2000);
     }
+
+    void initWatch();
   }
 
   return {
-    isLoading,
-    error,
-    configPath,
     initConfigPath,
     readConfig,
     writeConfig,
     startWatching,
-    stopWatching,
   };
 }

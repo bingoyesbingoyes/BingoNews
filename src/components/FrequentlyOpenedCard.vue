@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { TrendingUp, ExternalLink, File, CheckSquare, Square, Trash2 } from 'lucide-vue-next';
-import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import { useNewsStore } from '../stores/newsStore';
-import type { Source } from '../types';
 import { SPECIAL_CATEGORY_IDS } from '../types';
 
 const store = useNewsStore();
@@ -38,34 +36,9 @@ function toggleSelectAll() {
   }
 }
 
-async function openSelected() {
+function openSelected() {
   const selected = topSources.value.filter(s => store.selectedSources.has(s.id));
-  for (const source of selected) {
-    try {
-      store.incrementOpenCount(source.id);
-      if (source.isFile && source.filePath) {
-        await openPath(source.filePath);
-      } else {
-        await openUrl(source.url);
-      }
-    } catch (error) {
-      console.error('Failed to open:', error);
-    }
-  }
-}
-
-async function openSource(source: Source) {
-  try {
-    store.incrementOpenCount(source.id);
-
-    if (source.isFile && source.filePath) {
-      await openPath(source.filePath);
-    } else {
-      await openUrl(source.url);
-    }
-  } catch (error) {
-    console.error('Failed to open:', error);
-  }
+  return store.openSources(selected);
 }
 
 function handleCardClick() {
@@ -127,13 +100,13 @@ function removeFromFrequent(sourceId: string) {
           <ExternalLink v-else :size="14" />
         </div>
         <div class="source-info">
-          <span class="source-name" @click.stop="openSource(source)">{{ source.name }}</span>
-          <span class="source-category" :style="{ color: (source as any).categoryColor }">
-            {{ (source as any).categoryName }}
+          <span class="source-name" @click.stop="store.openSource(source)">{{ source.name }}</span>
+          <span class="source-category" :style="{ color: source.categoryColor }">
+            {{ source.categoryName }}
           </span>
         </div>
         <div class="source-actions">
-          <button class="action-btn open-btn" @click.stop="openSource(source)" title="Open">
+          <button class="action-btn open-btn" @click.stop="store.openSource(source)" title="Open">
             <ExternalLink :size="14" />
           </button>
           <button class="action-btn delete-btn" @click.stop="removeFromFrequent(source.id)" title="Remove from list">

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ExternalLink, Trash2, File, GripVertical } from 'lucide-vue-next';
-import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import type { Source } from '../types';
 import { useNewsStore } from '../stores/newsStore';
 import EditableText from './EditableText.vue';
@@ -20,24 +19,6 @@ const emit = defineEmits<{
 }>();
 
 const isFile = computed(() => props.source.isFile);
-
-async function openSource() {
-  try {
-    // Track the open count
-    store.incrementOpenCount(props.source.id);
-
-    if (props.source.isFile && props.source.filePath) {
-      // Use openPath for local files
-      await openPath(props.source.filePath);
-    } else {
-      // Use openUrl for web URLs
-      await openUrl(props.source.url);
-    }
-  } catch (error) {
-    console.error('Failed to open:', error);
-  }
-}
-
 </script>
 
 <template>
@@ -68,7 +49,7 @@ async function openSource() {
     </div>
 
     <div class="source-actions">
-      <button class="action-btn open-btn" @click="openSource" title="Open">
+      <button class="action-btn open-btn" @click="store.openSource(source)" title="Open">
         <ExternalLink :size="14" />
       </button>
       <button class="action-btn delete-btn" @click="emit('remove')" title="Delete">

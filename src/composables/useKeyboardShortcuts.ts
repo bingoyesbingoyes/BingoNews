@@ -1,6 +1,5 @@
 import { onMounted, onUnmounted } from 'vue';
 import { useNewsStore } from '../stores/newsStore';
-import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface KeyboardShortcutsOptions {
@@ -20,22 +19,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
     await appWindow.setFullscreen(!isFullscreen);
   }
 
-  async function openSelectedSources() {
-    const selected = store.getSelectedSourcesData();
-    for (const source of selected) {
-      try {
-        // Track the open count
-        store.incrementOpenCount(source.id);
-
-        if (source.isFile && source.filePath) {
-          await openPath(source.filePath);
-        } else {
-          await openUrl(source.url);
-        }
-      } catch (error) {
-        console.error('Failed to open:', error);
-      }
-    }
+  function openSelectedSources() {
+    return store.openSources(store.getSelectedSourcesData());
   }
 
   function handleKeydown(e: KeyboardEvent) {

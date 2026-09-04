@@ -9,20 +9,16 @@ import Sidebar from './components/Sidebar.vue';
 import CategoryCard from './components/CategoryCard.vue';
 import FrequentlyOpenedCard from './components/FrequentlyOpenedCard.vue';
 import { Search, ExternalLink, X } from 'lucide-vue-next';
-import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import type { Category } from './types';
 
-// Initialize theme on app load
 useTheme();
 
 const store = useNewsStore();
 
-// Initialize config file sync on mount
 onMounted(async () => {
   await store.initConfigSync();
 });
 
-// Computed for frequently opened
 const showFrequentlyOpened = computed(() =>
   store.showFrequentlyOpened && store.frequentlyOpenedSources.length > 0
 );
@@ -30,7 +26,6 @@ const contentRef = ref<HTMLElement | null>(null);
 const searchQuery = ref('');
 const sidebarVisible = ref(true);
 
-// Confirmation modal state
 const showDeleteConfirm = ref(false);
 const categoryToDelete = ref<string | null>(null);
 
@@ -53,7 +48,6 @@ function cancelDelete() {
   categoryToDelete.value = null;
 }
 
-// Categories ref for draggable
 const categories = ref<Category[]>([]);
 
 watch(
@@ -64,7 +58,6 @@ watch(
   { immediate: true, deep: true }
 );
 
-// Handle category drag end
 function onCategoryDragEnd() {
   store.reorderCategories(categories.value);
 }
@@ -76,7 +69,6 @@ function scrollToCategory(categoryId: string) {
   }
 }
 
-// Initialize keyboard shortcuts
 useKeyboardShortcuts({
   onToggleSidebar: () => { sidebarVisible.value = !sidebarVisible.value; },
   onToggleFrequentlyOpened: () => { store.toggleFrequentlyOpened(); },
@@ -85,7 +77,6 @@ useKeyboardShortcuts({
   onScrollToCategory: scrollToCategory
 });
 
-// Add category modal
 const showAddCategoryModal = ref(false);
 const newCategoryName = ref('');
 
@@ -101,7 +92,6 @@ function addCategory() {
   }
 }
 
-// Search functionality
 const filteredCategories = computed(() => {
   if (!searchQuery.value.trim()) {
     return store.categories;
@@ -119,23 +109,8 @@ const filteredCategories = computed(() => {
     .filter(cat => cat.sources.length > 0 || cat.name.toLowerCase().includes(query));
 });
 
-// Open all selected
 async function openAllSelected() {
-  const selected = store.getSelectedSourcesData();
-  for (const source of selected) {
-    try {
-      // Track the open count
-      store.incrementOpenCount(source.id);
-
-      if (source.isFile && source.filePath) {
-        await openPath(source.filePath);
-      } else {
-        await openUrl(source.url);
-      }
-    } catch (error) {
-      console.error('Failed to open:', error);
-    }
-  }
+  await store.openSources(store.getSelectedSourcesData());
 }
 </script>
 

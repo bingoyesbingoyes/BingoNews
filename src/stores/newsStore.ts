@@ -1,11 +1,16 @@
 import { defineStore } from 'pinia';
 import { ref, watch, computed } from 'vue';
+import { openPath, openUrl } from '@tauri-apps/plugin-opener';
 import type { Category, Source, AppConfig, OpenCountRecord } from '../types';
 import { getColorByIndex } from '../constants/colors';
 import { useConfigFile } from '../composables/useConfigFile';
 
 const STORAGE_KEY = 'bingonews_data';
 const OPEN_COUNTS_KEY = 'bingonews_open_counts';
+
+function withDefaultColors(categories: Category[]): Category[] {
+  return categories.map((cat, index) => cat.color ? cat : { ...cat, color: getColorByIndex(index) });
+}
 
 export const useNewsStore = defineStore('news', () => {
   const categories = ref<Category[]>([]);
@@ -23,7 +28,13 @@ export const useNewsStore = defineStore('news', () => {
 
   // Computed - Frequently opened sources (sorted by count)
   const frequentlyOpenedSources = computed(() => {
-    const allSources: (Source & { categoryId: string; categoryName: string; categoryColor?: string })[] = [];
+    const allSources: (Source & {
+      categoryId: string;
+      categoryName: string;
+      categoryColor?: string;
+      openCount: number;
+      lastOpened: string;
+    })[] = [];
 
     categories.value.forEach(cat => {
       cat.sources.forEach(source => {
@@ -41,11 +52,10 @@ export const useNewsStore = defineStore('news', () => {
       });
     });
 
-    // Sort by count descending, then by lastOpened descending
     return allSources.sort((a, b) => {
-      const countDiff = (b.openCount || 0) - (a.openCount || 0);
+      const countDiff = b.openCount - a.openCount;
       if (countDiff !== 0) return countDiff;
-      return (b.lastOpened || '').localeCompare(a.lastOpened || '');
+      return b.lastOpened.localeCompare(a.lastOpened);
     });
   });
 
@@ -111,52 +121,28 @@ export const useNewsStore = defineStore('news', () => {
       await configFile.initConfigPath();
       const config = await configFile.readConfig();
 
-      // Load from config file
       if (config.categories && config.categories.length > 0) {
-        // Ensure all categories have colors
-        categories.value = config.categories.map((cat, index) => {
-          if (!cat.color) {
-            return {
-              ...cat,
-              color: getColorByIndex(index)
-            };
-          }
-          return cat;
-        });
+        categories.value = withDefaultColors(config.categories);
       }
       if (config.openCounts) {
         openCounts.value = config.openCounts;
-        // Also save to localStorage
         localStorage.setItem(OPEN_COUNTS_KEY, JSON.stringify(config.openCounts));
       }
 
       configSyncEnabled.value = true;
       isConfigInitialized.value = true;
 
-      // Start watching for external changes
       configFile.startWatching((newConfig) => {
-        console.log('Config file changed externally, reloading...');
-        // Merge external changes
         if (newConfig.categories) {
-          categories.value = newConfig.categories.map((cat, index) => {
-            if (!cat.color) {
-              return {
-                ...cat,
-                color: getColorByIndex(index)
-              };
-            }
-            return cat;
-          });
+          categories.value = withDefaultColors(newConfig.categories);
         }
         if (newConfig.openCounts) {
           openCounts.value = newConfig.openCounts;
         }
       });
 
-      console.log('Config sync initialized, path:', configFile.configPath.value);
     } catch (e) {
       console.error('Config sync init failed:', e);
-      // Fall back to localStorage
       loadData();
       loadOpenCounts();
     }
@@ -183,16 +169,7 @@ export const useNewsStore = defineStore('news', () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as Category[];
-        // Ensure all categories have colors
-        categories.value = parsed.map((cat, index) => {
-          if (!cat.color) {
-            return {
-              ...cat,
-              color: getColorByIndex(index)
-            };
-          }
-          return cat;
-        });
+        categories.value = withDefaultColors(parsed);
       } catch {
         categories.value = [];
       }
@@ -363,6 +340,26 @@ export const useNewsStore = defineStore('news', () => {
     return selected;
   }
 
+  async function openSource(source: Source) {
+    try {
+      incrementOpenCount(source.id);
+
+      if (source.isFile && source.filePath) {
+        await openPath(source.filePath);
+      } else {
+        await openUrl(source.url);
+      }
+    } catch (error) {
+      console.error('Failed to open:', error);
+    }
+  }
+
+  async function openSources(sources: Source[]) {
+    for (const source of sources) {
+      await openSource(source);
+    }
+  }
+
   // Drag and drop operations
   function reorderCategories(newOrder: Category[]) {
     categories.value = newOrder;
@@ -377,14 +374,10 @@ export const useNewsStore = defineStore('news', () => {
     selectedSources,
     focusedCategoryId,
     showFrequentlyOpened,
-    openCounts,
     frequentlyOpenedSources,
     toggleFrequentlyOpened,
-    incrementOpenCount,
     clearOpenCount,
     initConfigSync,
-    syncToConfigFile,
-    configPath: configFile.configPath,
     addCategory,
     removeCategory,
     updateCategoryName,
@@ -396,6 +389,8 @@ export const useNewsStore = defineStore('news', () => {
     addSource,
     removeSource,
     updateSource,
+    openSource,
+    openSources,
     toggleSourceSelection,
     selectAllInCategory,
     deselectAllInCategory,

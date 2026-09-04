@@ -4,8 +4,6 @@ export interface Source {
   url: string;
   isFile?: boolean;
   filePath?: string;
-  openCount?: number;
-  lastOpened?: string;
 }
 
 export interface Category {
