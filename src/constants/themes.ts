@@ -15,7 +15,6 @@ export interface Theme {
     border: string;
     error: string;
     glassBg: string;
-    glassBorder: string;
   };
 }
 
@@ -37,7 +36,6 @@ export const THEMES: Theme[] = [
       border: 'rgba(0, 0, 0, 0.06)',
       error: '#FF3B30',
       glassBg: 'rgba(255, 255, 255, 0.7)',
-      glassBorder: 'rgba(255, 255, 255, 0.5)',
     }
   },
   {
@@ -57,7 +55,6 @@ export const THEMES: Theme[] = [
       border: 'rgba(255, 255, 255, 0.06)',
       error: '#F38BA8',
       glassBg: 'rgba(17, 17, 27, 0.6)',
-      glassBorder: 'rgba(255, 255, 255, 0.06)',
     }
   },
   {
@@ -77,7 +74,6 @@ export const THEMES: Theme[] = [
       border: 'rgba(232, 93, 117, 0.1)',
       error: '#E85D75',
       glassBg: 'rgba(255, 255, 255, 0.7)',
-      glassBorder: 'rgba(232, 93, 117, 0.08)',
     }
   },
   {
@@ -97,7 +93,6 @@ export const THEMES: Theme[] = [
       border: 'rgba(91, 138, 138, 0.12)',
       error: '#E57373',
       glassBg: 'rgba(255, 255, 255, 0.75)',
-      glassBorder: 'rgba(91, 138, 138, 0.1)',
     }
   }
 ];

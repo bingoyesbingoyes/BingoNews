@@ -23,6 +23,10 @@ const props = defineProps<{
   category: Category;
 }>();
 
+const emit = defineEmits<{
+  (e: 'deleteCategory'): void;
+}>();
+
 const store = useNewsStore();
 
 const isCollapsed = computed(() => props.category.collapsed);
@@ -223,10 +227,16 @@ function handleDrop(e: DragEvent) {
         class="color-dot-btn"
         :style="{ backgroundColor: categoryColor }"
         title="Change color"
+        aria-label="Change category color"
         @click="showColorPicker = true"
       />
 
-      <button class="collapse-btn" @click="toggleCollapse">
+      <button
+        class="collapse-btn"
+        :aria-expanded="!isCollapsed"
+        :aria-label="isCollapsed ? 'Expand category' : 'Collapse category'"
+        @click="toggleCollapse"
+      >
         <ChevronRight v-if="isCollapsed" :size="18" />
         <ChevronDown v-else :size="18" />
       </button>
@@ -254,6 +264,7 @@ function handleDrop(e: DragEvent) {
           class="btn btn-icon"
           @click="toggleSelectAll"
           :title="allSelected ? 'Deselect All' : 'Select All'"
+          :aria-label="allSelected ? 'Deselect all sources' : 'Select all sources'"
         >
           <CheckSquare v-if="allSelected" :size="16" />
           <Square v-else :size="16" />
@@ -262,7 +273,8 @@ function handleDrop(e: DragEvent) {
         <button
           class="btn btn-icon"
           @click="pickFile"
-          title="Add File/App"
+          title="Add File or App"
+          aria-label="Add File or App"
         >
           <FileText :size="16" />
         </button>
@@ -271,14 +283,16 @@ function handleDrop(e: DragEvent) {
           class="btn btn-icon"
           @click="openAddForm"
           title="Add URL"
+          aria-label="Add URL source"
         >
           <Plus :size="16" />
         </button>
 
         <button
           class="btn btn-icon delete-btn"
-          @click="store.removeCategory(category.id)"
+          @click="emit('deleteCategory')"
           title="Delete Category"
+          aria-label="Delete Category"
         >
           <Trash2 :size="16" />
         </button>
@@ -293,6 +307,7 @@ function handleDrop(e: DragEvent) {
           type="text"
           class="input"
           placeholder="Name"
+          aria-label="Source name"
           @keydown.enter="addSource"
           @keydown.escape="cancelAdd"
         />
@@ -301,6 +316,7 @@ function handleDrop(e: DragEvent) {
           type="text"
           class="input"
           placeholder="URL"
+          aria-label="Source URL or file path"
           @keydown.enter="addSource"
           @keydown.escape="cancelAdd"
         />
@@ -338,7 +354,7 @@ function handleDrop(e: DragEvent) {
       <!-- Empty state -->
       <div v-if="category.sources.length === 0 && !showAddForm" class="empty-state">
         <p>No sources yet</p>
-        <p class="empty-hint">Click 📄 to add files, + to add URLs, or drop files here</p>
+        <p class="empty-hint">Add files with File, URLs with +, or drop files here</p>
       </div>
     </div>
 
@@ -458,7 +474,7 @@ function handleDrop(e: DragEvent) {
 
 .delete-btn:hover {
   color: var(--color-error);
-  background: rgba(255, 59, 48, 0.1);
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 .category-content {

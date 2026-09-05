@@ -15,6 +15,16 @@ const emit = defineEmits<{
   (e: 'addCategory'): void;
 }>();
 
+function selectCategory(categoryId: string) {
+  store.setFocusedCategory(categoryId);
+  emit('scrollToCategory', categoryId);
+}
+
+function selectFrequentlyOpened() {
+  store.setFocusedCategory(SPECIAL_CATEGORY_IDS.FREQUENTLY_OPENED);
+  emit('scrollToCategory', SPECIAL_CATEGORY_IDS.FREQUENTLY_OPENED);
+}
+
 const categoriesWithCounts = computed(() => {
   return store.categories.map(cat => ({
     ...cat,
@@ -69,7 +79,11 @@ const themePreviewStyles: Record<string, string> = {
           <li
             class="nav-item special-nav-item"
             :class="{ focused: store.focusedCategoryId === SPECIAL_CATEGORY_IDS.FREQUENTLY_OPENED }"
-            @click="store.setFocusedCategory(SPECIAL_CATEGORY_IDS.FREQUENTLY_OPENED); emit('scrollToCategory', SPECIAL_CATEGORY_IDS.FREQUENTLY_OPENED)"
+            role="button"
+            tabindex="0"
+            @click="selectFrequentlyOpened"
+            @keydown.enter.prevent="selectFrequentlyOpened"
+            @keydown.space.prevent="selectFrequentlyOpened"
           >
             <TrendingUp :size="14" class="nav-icon-special" />
             <span class="nav-label">Frequently Opened</span>
@@ -86,7 +100,11 @@ const themePreviewStyles: Record<string, string> = {
             :key="category.id"
             class="nav-item"
             :class="{ focused: store.focusedCategoryId === category.id }"
-            @click="store.setFocusedCategory(category.id); emit('scrollToCategory', category.id)"
+            role="button"
+            tabindex="0"
+            @click="selectCategory(category.id)"
+            @keydown.enter.prevent="selectCategory(category.id)"
+            @keydown.space.prevent="selectCategory(category.id)"
           >
             <span
               class="category-color-dot"
@@ -115,7 +133,7 @@ const themePreviewStyles: Record<string, string> = {
       <div v-if="showSettings" class="settings-panel">
         <div class="settings-header">
           <span class="settings-title">Settings</span>
-          <button class="btn btn-icon" @click="showSettings = false">
+          <button class="btn btn-icon" aria-label="Close settings" title="Close settings" @click="showSettings = false">
             <X :size="16" />
           </button>
         </div>
@@ -133,6 +151,7 @@ const themePreviewStyles: Record<string, string> = {
               :key="theme.id"
               class="theme-option"
               :class="{ active: currentThemeId === theme.id }"
+              :aria-pressed="currentThemeId === theme.id"
               @click="setTheme(theme.id)"
             >
               <span
@@ -461,5 +480,9 @@ const themePreviewStyles: Record<string, string> = {
 .special-count {
   background: var(--color-accent);
   color: white;
+}
+
+[data-theme="dark"] .special-count {
+  color: #1e1e2e;
 }
 </style>

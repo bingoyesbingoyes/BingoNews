@@ -74,6 +74,7 @@ function removeFromFrequent(sourceId: string) {
           class="btn btn-icon"
           @click.stop="toggleSelectAll"
           :title="allSelected ? 'Deselect All' : 'Select All'"
+          :aria-label="allSelected ? 'Deselect all frequently opened sources' : 'Select all frequently opened sources'"
         >
           <CheckSquare v-if="allSelected" :size="16" />
           <Square v-else :size="16" />
@@ -92,6 +93,7 @@ function removeFromFrequent(sourceId: string) {
           type="checkbox"
           class="checkbox"
           :checked="store.selectedSources.has(source.id)"
+          :aria-label="`Select ${source.name}`"
           @change="store.toggleSourceSelection(source.id)"
           @click.stop
         />
@@ -106,10 +108,10 @@ function removeFromFrequent(sourceId: string) {
           </span>
         </div>
         <div class="source-actions">
-          <button class="action-btn open-btn" @click.stop="store.openSource(source)" title="Open">
+          <button class="action-btn open-btn" @click.stop="store.openSource(source)" title="Open" :aria-label="`Open ${source.name}`">
             <ExternalLink :size="14" />
           </button>
-          <button class="action-btn delete-btn" @click.stop="removeFromFrequent(source.id)" title="Remove from list">
+          <button class="action-btn delete-btn" @click.stop="removeFromFrequent(source.id)" title="Remove from list" :aria-label="`Remove ${source.name} from frequently opened`">
             <Trash2 :size="14" />
           </button>
         </div>
@@ -161,6 +163,10 @@ function removeFromFrequent(sourceId: string) {
   border-radius: 12px;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+}
+
+[data-theme="dark"] .source-count {
+  color: #1e1e2e;
 }
 
 .header-actions {
@@ -247,7 +253,8 @@ function removeFromFrequent(sourceId: string) {
   transition: opacity var(--transition-fast);
 }
 
-.freq-source-item:hover .source-actions {
+.freq-source-item:hover .source-actions,
+.freq-source-item:focus-within .source-actions {
   opacity: 1;
 }
 
@@ -275,7 +282,7 @@ function removeFromFrequent(sourceId: string) {
 
 .delete-btn:hover {
   color: var(--color-error);
-  background: rgba(255, 59, 48, 0.1);
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 .empty-state {

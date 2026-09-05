@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 import { X, Check } from 'lucide-vue-next';
 import { CATEGORY_COLORS } from '../constants/colors';
 
@@ -14,10 +14,44 @@ const emit = defineEmits<{
 }>();
 
 const selectedColor = ref(props.modelValue);
+const modalRef = ref<HTMLElement | null>(null);
+const closeBtnRef = ref<HTMLElement | null>(null);
+let previousFocus: HTMLElement | null = null;
 
 watch(() => props.modelValue, (val) => {
   selectedColor.value = val;
 });
+
+watch(() => props.visible, (visible) => {
+  if (visible) {
+    previousFocus = document.activeElement as HTMLElement | null;
+    nextTick(() => closeBtnRef.value?.focus());
+  } else if (!visible && previousFocus) {
+    const trigger = previousFocus;
+    previousFocus = null;
+    nextTick(() => trigger?.focus());
+  }
+});
+
+function trapFocus(e: KeyboardEvent) {
+  const modal = modalRef.value;
+  if (!modal) return;
+  const focusable = modal.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+  );
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+
+  if (e.shiftKey && (active === first || !modal.contains(active))) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (active === last || !modal.contains(active))) {
+    e.preventDefault();
+    first.focus();
+  }
+}
 
 function selectPresetColor(color: string) {
   selectedColor.value = color;
@@ -57,22 +91,33 @@ function isSelected(color: string) {
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="visible" class="color-picker-overlay" @click.self="cancel">
-        <div class="color-picker-modal glass">
+        <div
+          ref="modalRef"
+          class="color-picker-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="color-picker-modal-title"
+          tabindex="-1"
+          @keydown.escape="cancel"
+          @keydown.tab="trapFocus"
+        >
           <div class="modal-header">
-            <h3 class="modal-title">Choose Color</h3>
-            <button class="btn btn-icon close-btn" @click="cancel">
+            <h3 id="color-picker-modal-title" class="modal-title">Choose Color</h3>
+            <button ref="closeBtnRef" class="btn btn-icon close-btn" aria-label="Close color picker" title="Close" @click="cancel">
               <X :size="18" />
             </button>
           </div>
 
-          <div class="preset-colors">
+          <div class="preset-colors" role="group" aria-label="Preset colors">
             <button
               v-for="color in CATEGORY_COLORS"
               :key="color.value"
               class="color-swatch"
               :class="{ selected: isSelected(color.value) }"
-              :style="{ backgroundColor: color.value }"
+              :style="{ backgroundColor: color.value, color: color.value }"
               :title="color.name"
+              :aria-label="`Use ${color.name} color`"
+              :aria-pressed="isSelected(color.value)"
               @click="selectPresetColor(color.value)"
             >
               <Check v-if="isSelected(color.value)" :size="14" class="check-icon" />
@@ -86,6 +131,7 @@ function isSelected(color: string) {
                 type="color"
                 :value="selectedColor"
                 class="color-input"
+                aria-label="Pick custom color"
                 @input="handleCustomColorChange"
               />
               <input
@@ -93,6 +139,7 @@ function isSelected(color: string) {
                 :value="selectedColor"
                 class="hex-input input"
                 placeholder="#000000"
+                aria-label="Hex color value"
                 maxlength="7"
                 @input="handleHexInput"
               />

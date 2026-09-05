@@ -28,6 +28,45 @@ const sidebarVisible = ref(true);
 
 const showDeleteConfirm = ref(false);
 const categoryToDelete = ref<string | null>(null);
+const deleteModalRef = ref<HTMLElement | null>(null);
+const deleteCancelBtnRef = ref<HTMLElement | null>(null);
+let previousModalTrigger: HTMLElement | null = null;
+
+function restoreModalFocus() {
+  if (previousModalTrigger) {
+    const trigger = previousModalTrigger;
+    previousModalTrigger = null;
+    nextTick(() => trigger?.focus());
+  }
+}
+
+watch(showDeleteConfirm, (visible) => {
+  if (visible) {
+    previousModalTrigger = document.activeElement as HTMLElement | null;
+    nextTick(() => deleteCancelBtnRef.value?.focus());
+  } else if (!visible) {
+    restoreModalFocus();
+  }
+});
+
+function trapTabFocus(modal: HTMLElement | null, e: KeyboardEvent) {
+  if (!modal) return;
+  const focusable = modal.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+  );
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+
+  if (e.shiftKey && (active === first || !modal.contains(active))) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (active === last || !modal.contains(active))) {
+    e.preventDefault();
+    first.focus();
+  }
+}
 
 function confirmDeleteCategory(categoryId: string) {
   categoryToDelete.value = categoryId;
@@ -79,6 +118,17 @@ useKeyboardShortcuts({
 
 const showAddCategoryModal = ref(false);
 const newCategoryName = ref('');
+const addCategoryModalRef = ref<HTMLElement | null>(null);
+const addCategoryNameInput = ref<HTMLInputElement | null>(null);
+
+watch(showAddCategoryModal, (visible) => {
+  if (visible) {
+    previousModalTrigger = document.activeElement as HTMLElement | null;
+    nextTick(() => addCategoryNameInput.value?.focus());
+  } else if (!visible) {
+    restoreModalFocus();
+  }
+});
 
 function addCategory() {
   if (newCategoryName.value.trim()) {
@@ -121,13 +171,16 @@ async function openAllSelected() {
         <Search :size="16" class="search-icon" />
         <input
           v-model="searchQuery"
-          type="text"
+          type="search"
           class="search-input"
           placeholder="Search"
+          aria-label="Search sources"
         />
         <button
           v-if="searchQuery"
           class="search-clear"
+          aria-label="Clear search"
+          title="Clear search"
           @click="searchQuery = ''"
         >
           <X :size="14" />
@@ -147,7 +200,7 @@ async function openAllSelected() {
       <main ref="contentRef" class="main-content">
         <!-- Floating action bar -->
         <Transition name="slide">
-          <div v-if="store.selectedSources.size > 0" class="floating-bar glass">
+          <div v-if="store.selectedSources.size > 0" class="floating-bar">
             <span class="selected-count">
               {{ store.selectedSources.size }} selected
             </span>
@@ -182,6 +235,7 @@ async function openAllSelected() {
               <CategoryCard
                 v-if="!searchQuery || filteredCategories.some(c => c.id === element.id)"
                 :category="element"
+                @delete-category="confirmDeleteCategory(element.id)"
               />
             </div>
           </template>
@@ -196,6 +250,16 @@ async function openAllSelected() {
             Add Your First Category
           </button>
         </div>
+
+        <!-- No search results -->
+        <div v-else-if="searchQuery && filteredCategories.length === 0" class="empty-state-main">
+          <div class="empty-icon">
+            <Search :size="32" />
+          </div>
+          <h2>No Results</h2>
+          <p>No sources match “{{ searchQuery }}”. Try a different search.</p>
+          <button class="btn" @click="searchQuery = ''">Clear Search</button>
+        </div>
       </main>
     </div>
 
@@ -203,16 +267,26 @@ async function openAllSelected() {
     <Teleport to="body">
       <Transition name="fade">
         <div v-if="showAddCategoryModal" class="modal-overlay" @click.self="showAddCategoryModal = false">
-          <div class="modal glass">
-            <h3 class="modal-title">New Category</h3>
+          <div
+            ref="addCategoryModalRef"
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-category-modal-title"
+            tabindex="-1"
+            @keydown.escape="showAddCategoryModal = false"
+            @keydown.tab="trapTabFocus(addCategoryModalRef, $event)"
+          >
+            <h3 id="new-category-modal-title" class="modal-title">New Category</h3>
             <input
+              ref="addCategoryNameInput"
               v-model="newCategoryName"
               type="text"
               class="input modal-input"
               placeholder="Category name"
+              aria-label="Category name"
               @keydown.enter="addCategory"
               @keydown.escape="showAddCategoryModal = false"
-              autofocus
             />
             <div class="modal-actions">
               <button class="btn" @click="showAddCategoryModal = false">Cancel</button>
@@ -227,13 +301,22 @@ async function openAllSelected() {
     <Teleport to="body">
       <Transition name="fade">
         <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="cancelDelete">
-          <div class="modal glass">
-            <h3 class="modal-title">Delete Category</h3>
+          <div
+            ref="deleteModalRef"
+            class="modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-modal-title"
+            tabindex="-1"
+            @keydown.escape="cancelDelete"
+            @keydown.tab="trapTabFocus(deleteModalRef, $event)"
+          >
+            <h3 id="delete-modal-title" class="modal-title">Delete Category</h3>
             <p class="modal-message">
               Are you sure you want to delete this category? All sources within it will be removed.
             </p>
             <div class="modal-actions">
-              <button class="btn" @click="cancelDelete">Cancel</button>
+              <button ref="deleteCancelBtnRef" class="btn" @click="cancelDelete">Cancel</button>
               <button class="btn btn-danger" @click="executeDelete">Delete</button>
             </div>
           </div>
@@ -320,7 +403,8 @@ async function openAllSelected() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 0 var(--space-md);
-  --webkit-app-region: no-drag;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .search-icon {
@@ -340,6 +424,11 @@ async function openAllSelected() {
 
 .search-input::placeholder {
   color: var(--color-text-tertiary);
+}
+
+.search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .search-clear {
@@ -470,7 +559,7 @@ async function openAllSelected() {
 }
 
 .btn-danger:hover {
-  background: #E0352B;
+  background: color-mix(in srgb, var(--color-error) 82%, #000);
 }
 
 /* Slide transition */

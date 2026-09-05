@@ -192,9 +192,9 @@ export const useNewsStore = defineStore('news', () => {
   }, { deep: true });
 
   // Category operations
-  function addCategory(name: string, color?: string) {
+  function addCategory(name: string) {
     const id = `cat_${Date.now()}`;
-    const categoryColor = color || getColorByIndex(categories.value.length);
+    const categoryColor = getColorByIndex(categories.value.length);
     categories.value.push({
       id,
       name,

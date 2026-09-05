@@ -84,7 +84,6 @@ function applyTheme(theme: Theme) {
   root.style.setProperty('--color-border', colors.border);
   root.style.setProperty('--color-error', colors.error);
   root.style.setProperty('--glass-bg', colors.glassBg);
-  root.style.setProperty('--glass-border', colors.glassBorder);
 
   root.style.setProperty('--card-bg', styles.cardBg);
   root.style.setProperty('--card-bg-hover', styles.cardBgHover);

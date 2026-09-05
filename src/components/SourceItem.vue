@@ -31,6 +31,7 @@ const isFile = computed(() => props.source.isFile);
       type="checkbox"
       class="checkbox"
       :checked="selected"
+      :aria-label="`Select ${source.name}`"
       @change="emit('toggle')"
     />
 
@@ -49,10 +50,10 @@ const isFile = computed(() => props.source.isFile);
     </div>
 
     <div class="source-actions">
-      <button class="action-btn open-btn" @click="store.openSource(source)" title="Open">
+      <button class="action-btn open-btn" @click="store.openSource(source)" title="Open" :aria-label="`Open ${source.name}`">
         <ExternalLink :size="14" />
       </button>
-      <button class="action-btn delete-btn" @click="emit('remove')" title="Delete">
+      <button class="action-btn delete-btn" @click="emit('remove')" title="Delete" :aria-label="`Delete ${source.name}`">
         <Trash2 :size="14" />
       </button>
     </div>
@@ -124,7 +125,8 @@ const isFile = computed(() => props.source.isFile);
   transition: opacity var(--transition-fast);
 }
 
-.source-item:hover .source-actions {
+.source-item:hover .source-actions,
+.source-item:focus-within .source-actions {
   opacity: 1;
 }
 
@@ -152,7 +154,7 @@ const isFile = computed(() => props.source.isFile);
 
 .delete-btn:hover {
   color: var(--color-error);
-  background: rgba(255, 59, 48, 0.1);
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 .is-file .source-icon {

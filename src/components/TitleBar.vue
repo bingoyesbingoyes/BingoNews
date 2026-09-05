@@ -1,18 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Minus, Square, X, Maximize2 } from 'lucide-vue-next';
 
 const appWindow = getCurrentWindow();
 const isMaximized = ref(false);
 let unlisten: (() => void) | null = null;
 
-// Sync isMaximized state with actual window state
 onMounted(async () => {
-  // Check initial state
   isMaximized.value = await appWindow.isMaximized();
 
-  // Listen for window resize events to sync state
   unlisten = await appWindow.onResized(async () => {
     isMaximized.value = await appWindow.isMaximized();
   });
@@ -30,7 +26,6 @@ async function minimize() {
 
 async function toggleMaximize() {
   await appWindow.toggleMaximize();
-  // State will be synced by onResized listener
 }
 
 async function close() {
@@ -38,9 +33,8 @@ async function close() {
 }
 
 function startDrag(e: MouseEvent) {
-  // Don't start drag if clicking on interactive elements
   const target = e.target as HTMLElement;
-  if (target.closest('.titlebar-right') || target.closest('.search-bar') || target.closest('button') || target.closest('input')) {
+  if (target.closest('button') || target.closest('input') || target.closest('textarea') || target.closest('.titlebar-traffic') || target.closest('.search-bar')) {
     return;
   }
   appWindow.startDragging();
@@ -48,26 +42,29 @@ function startDrag(e: MouseEvent) {
 </script>
 
 <template>
-  <header class="titlebar glass" @mousedown="startDrag">
+  <header class="titlebar" @mousedown="startDrag">
     <div class="titlebar-left">
-      <img class="app-icon" src="/app-icon.png" alt="BingoNews" />
-      <h1 class="app-title">BingoNews</h1>
+      <div class="titlebar-traffic" @mousedown.stop>
+        <button class="traffic-btn traffic-close" aria-label="Close" title="Close" @click="close"></button>
+        <button class="traffic-btn traffic-minimize" aria-label="Minimize" title="Minimize" @click="minimize"></button>
+        <button
+          class="traffic-btn traffic-zoom"
+          :aria-label="isMaximized ? 'Restore' : 'Zoom'"
+          :title="isMaximized ? 'Restore' : 'Zoom'"
+          @click="toggleMaximize"
+        ></button>
+      </div>
     </div>
 
     <div class="titlebar-center">
       <slot></slot>
     </div>
 
-    <div class="titlebar-right" @mousedown.stop>
-      <button class="window-btn minimize" @click="minimize" title="Minimize">
-        <Minus :size="14" />
-      </button>
-      <button class="window-btn maximize" @click="toggleMaximize" title="Maximize">
-        <component :is="isMaximized ? Square : Maximize2" :size="12" />
-      </button>
-      <button class="window-btn close" @click="close" title="Close">
-        <X :size="14" />
-      </button>
+    <div class="titlebar-right">
+      <div class="titlebar-brand">
+        <img class="app-icon" src="/app-icon.png" alt="BingoNews" />
+        <h1 class="app-title">BingoNews</h1>
+      </div>
     </div>
   </header>
 </template>
@@ -77,71 +74,106 @@ function startDrag(e: MouseEvent) {
   height: var(--titlebar-height);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-lg);
   padding: 0 var(--space-lg);
   -webkit-app-region: drag;
   background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .titlebar-left {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  min-width: 0;
+}
+
+.titlebar-traffic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.traffic-btn {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.15);
+  transition: filter var(--transition-fast);
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.traffic-btn:hover {
+  filter: brightness(0.92);
+}
+
+.traffic-btn:active {
+  filter: brightness(0.78);
+}
+
+.traffic-close {
+  background: #ff5f57;
+}
+
+.traffic-minimize {
+  background: #febc2e;
+}
+
+.traffic-zoom {
+  background: #28c840;
+}
+
+.traffic-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-bg-secondary), 0 0 0 4px var(--color-accent);
+}
+
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  -webkit-app-region: drag;
+  app-region: drag;
 }
 
 .app-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
   object-fit: contain;
 }
 
 .app-title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
 .titlebar-center {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
 .titlebar-right {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-  position: relative;
-  z-index: 100;
-}
-
-.window-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-fast);
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-  pointer-events: auto;
-}
-
-.window-btn:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
-.window-btn.close:hover {
-  background: var(--color-error);
-  color: white;
+  justify-content: flex-end;
+  min-width: 0;
 }
 </style>

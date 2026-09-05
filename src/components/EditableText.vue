@@ -55,6 +55,7 @@ function handleKeydown(e: KeyboardEvent) {
     ref="inputRef"
     v-model="editValue"
     class="editable-input"
+    :aria-label="`Rename ${value}`"
     @blur="save"
     @keydown="handleKeydown"
     @click.stop
@@ -63,7 +64,13 @@ function handleKeydown(e: KeyboardEvent) {
     v-else
     :is="tag || 'span'"
     class="editable-text"
+    role="button"
+    tabindex="0"
+    :title="`Rename: ${value}`"
     @dblclick="startEditing"
+    @keydown.enter.prevent="startEditing"
+    @keydown.space.prevent="startEditing"
+    @keydown.f2.prevent="startEditing"
   >
     {{ value }}
   </component>
